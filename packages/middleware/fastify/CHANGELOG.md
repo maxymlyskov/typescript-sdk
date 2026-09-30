@@ -1,5 +1,14 @@
 # @modelcontextprotocol/fastify
 
+## 2.0.1
+
+### Patch Changes
+
+- [#2908](https://github.com/modelcontextprotocol/typescript-sdk/pull/2908) [`633dd3e`](https://github.com/modelcontextprotocol/typescript-sdk/commit/633dd3e12bff6869c932c4a526341622320912b1) Thanks [@claude](https://github.com/apps/claude)! - The `license` field of the package manifests is now `Apache-2.0`; the `LICENSE` file shipped in each package carries the full terms, including the MIT text for earlier contributions. No code change.
+
+- Updated dependencies [[`5238fba`](https://github.com/modelcontextprotocol/typescript-sdk/commit/5238fba4424f82ec1ae9f6f458dd655ab322062d), [`4d94e7b`](https://github.com/modelcontextprotocol/typescript-sdk/commit/4d94e7b1ccf769d94a7bbba7789f1ee6c7dfdd8c), [`e55f9ac`](https://github.com/modelcontextprotocol/typescript-sdk/commit/e55f9ac1b1cae413599b499cbaa45c0378edba78), [`633dd3e`](https://github.com/modelcontextprotocol/typescript-sdk/commit/633dd3e12bff6869c932c4a526341622320912b1), [`2237555`](https://github.com/modelcontextprotocol/typescript-sdk/commit/2237555ed036c3e80341c0f3c28684e9c3ff0728)]:
+    - @modelcontextprotocol/server@2.3.0
+
 ## 2.0.0
 
 ### Patch Changes

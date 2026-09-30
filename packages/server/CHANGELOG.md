@@ -1,5 +1,24 @@
 # @modelcontextprotocol/server
 
+## 2.3.0
+
+### Minor Changes
+
+- [#2907](https://github.com/modelcontextprotocol/typescript-sdk/pull/2907) [`e55f9ac`](https://github.com/modelcontextprotocol/typescript-sdk/commit/e55f9ac1b1cae413599b499cbaa45c0378edba78) Thanks [@claude](https://github.com/apps/claude)! - `allowedOrigins` and `validateOriginHeader` accept lowercase entries of the form `<scheme>://*`, such as `moz-extension://*` or `chrome-extension://*`, which admit every origin of that scheme. This lets a server admit MCP clients that run as a browser extension when the extension ID cannot be listed, as on Firefox, where it differs on every install. `http://*` and `https://*` are not honoured, and the defaults are unchanged.
+
+### Patch Changes
+
+- [#2599](https://github.com/modelcontextprotocol/typescript-sdk/pull/2599) [`5238fba`](https://github.com/modelcontextprotocol/typescript-sdk/commit/5238fba4424f82ec1ae9f6f458dd655ab322062d) Thanks [@freya0926](https://github.com/freya0926)! - A server can now serve, and a client can now call, `tasks/get` and `tasks/cancel` of the Tasks extension (SEP-2663) on a 2026-07-28 connection, when the handler is registered and the request is sent with an explicit schema. Every other method that a protocol revision removed is still refused. If one server factory serves both eras and such a handler is meant for 2025-era clients only, register it only when `ctx.era === 'legacy'`.
+
+- [#2889](https://github.com/modelcontextprotocol/typescript-sdk/pull/2889) [`4d94e7b`](https://github.com/modelcontextprotocol/typescript-sdk/commit/4d94e7b1ccf769d94a7bbba7789f1ee6c7dfdd8c) Thanks [@claude](https://github.com/apps/claude)! - `registerTool` no longer converts tool schemas up front, so a server built per request stops converting every tool on every request. The warning about an invalid `x-mcp-header` declaration now appears each time tools are listed, not when the tool is registered.
+
+- [#2908](https://github.com/modelcontextprotocol/typescript-sdk/pull/2908) [`633dd3e`](https://github.com/modelcontextprotocol/typescript-sdk/commit/633dd3e12bff6869c932c4a526341622320912b1) Thanks [@claude](https://github.com/apps/claude)! - The `license` field of the package manifests is now `Apache-2.0`; the `LICENSE` file shipped in each package carries the full terms, including the MIT text for earlier contributions. No code change.
+
+- [#2841](https://github.com/modelcontextprotocol/typescript-sdk/pull/2841) [`2237555`](https://github.com/modelcontextprotocol/typescript-sdk/commit/2237555ed036c3e80341c0f3c28684e9c3ff0728) Thanks [@sharziki](https://github.com/sharziki)! - `McpServer.registerPrompt()` now types the callback correctly when no `argsSchema` is given: its one parameter is the server context. Before, reading `ctx.mcpReq` there was a type error although it worked at runtime. Prompts registered with an `argsSchema` are unchanged.
+
+- Updated dependencies [[`633dd3e`](https://github.com/modelcontextprotocol/typescript-sdk/commit/633dd3e12bff6869c932c4a526341622320912b1)]:
+    - @modelcontextprotocol/core@2.3.0
+
 ## 2.2.0
 
 ### Patch Changes
