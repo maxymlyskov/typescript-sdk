@@ -169,6 +169,7 @@ export class SSEClientTransport implements Transport {
     private _redirectPolicy?: 'same-origin' | 'follow';
     private _dpop?: Middleware;
     private _protocolVersion?: string;
+    private _closed = false;
 
     onclose?: () => void;
     onerror?: (error: Error) => void;
@@ -298,6 +299,7 @@ export class SSEClientTransport implements Transport {
                                 markAuthSeamEscape(error);
                                 this.onerror?.(error as Error);
                                 reject(error);
+                                this._closeIfEnded();
                             }
                         );
                         return;
@@ -315,6 +317,7 @@ export class SSEClientTransport implements Transport {
                     this._last401Response = undefined;
                     reject(error);
                     this.onerror?.(error);
+                    this._closeIfEnded();
                     return;
                 }
 
@@ -323,6 +326,7 @@ export class SSEClientTransport implements Transport {
                 const error = new SseError(event.code, redirect ?? event.message, event);
                 reject(error);
                 this.onerror?.(error);
+                this._closeIfEnded();
             };
 
             this._eventSource.onopen = () => {
@@ -421,9 +425,16 @@ export class SSEClientTransport implements Transport {
         }
     }
 
+    // eventsource does not reopen a CLOSED stream, so a connected transport is over.
+    private _closeIfEnded(): void {
+        if (this._endpoint && this._eventSource?.readyState === EventSource.CLOSED) void this.close();
+    }
+
     async close(): Promise<void> {
         this._abortController?.abort();
         this._eventSource?.close();
+        if (this._closed) return;
+        this._closed = true;
         this.onclose?.();
     }
 

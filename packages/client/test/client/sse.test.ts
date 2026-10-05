@@ -136,7 +136,10 @@ describe('SSEClientTransport', () => {
             resourceBaseUrl = await listenOnRandomPort(resourceServer);
 
             transport = new SSEClientTransport(resourceBaseUrl);
+            const onclose = vi.fn();
+            transport.onclose = onclose;
             await expect(transport.start()).rejects.toThrow();
+            expect(onclose).not.toHaveBeenCalled();
         });
 
         it('closes EventSource connection on close()', async () => {
@@ -149,6 +152,55 @@ describe('SSEClientTransport', () => {
 
             await transport.close();
             await closePromise;
+        });
+
+        it('fires onclose once when the EventSource gives up after a failed reconnect', async () => {
+            await resourceServer.close();
+
+            let getAttempt = 0;
+            resourceServer = createServer((_req, res) => {
+                // 1: opens and drops, 2: the reconnect gets 503, so the EventSource stops retrying.
+                if (++getAttempt > 1) {
+                    res.writeHead(503).end();
+                    return;
+                }
+                res.writeHead(200, { 'Content-Type': 'text/event-stream' });
+                res.end(`retry: 10\nevent: endpoint\ndata: ${resourceBaseUrl.href}\n\n`);
+            });
+            resourceBaseUrl = await listenOnRandomPort(resourceServer);
+
+            transport = new SSEClientTransport(resourceBaseUrl);
+            const onclose = vi.fn();
+            transport.onclose = onclose;
+            await transport.start();
+
+            await vi.waitFor(() => expect(onclose).toHaveBeenCalledTimes(1));
+            expect(getAttempt).toBe(2);
+            await transport.close();
+            expect(onclose).toHaveBeenCalledTimes(1);
+        });
+
+        it('does not fire onclose when the stream drops and the reconnect succeeds', async () => {
+            await resourceServer.close();
+
+            let getAttempt = 0;
+            resourceServer = createServer((_req, res) => {
+                // 1: opens and drops, 2: the reconnect opens and stays open.
+                getAttempt++;
+                res.writeHead(200, { 'Content-Type': 'text/event-stream' });
+                res.write(`retry: 10\nevent: endpoint\ndata: ${resourceBaseUrl.href}\n\n`);
+                if (getAttempt === 1) res.end();
+            });
+            resourceBaseUrl = await listenOnRandomPort(resourceServer);
+
+            transport = new SSEClientTransport(resourceBaseUrl);
+            const onclose = vi.fn();
+            transport.onclose = onclose;
+            await transport.start();
+
+            await vi.waitFor(() => expect(getAttempt).toBe(2));
+            await new Promise(resolve => setTimeout(resolve, 50));
+            expect(onclose).not.toHaveBeenCalled();
         });
     });
 
@@ -1917,6 +1969,61 @@ describe('SSEClientTransport', () => {
             } finally {
                 vi.useRealTimers();
             }
+        });
+
+        it('SSE reconnect: a 401 without onUnauthorized fires onclose once', async () => {
+            await resourceServer.close();
+
+            let getAttempt = 0;
+            resourceServer = createServer((_req, res) => {
+                // 1: opens and drops, every later GET: 401.
+                if (++getAttempt > 1) {
+                    res.writeHead(401).end();
+                    return;
+                }
+                res.writeHead(200, { 'Content-Type': 'text/event-stream' });
+                res.end(`retry: 10\nevent: endpoint\ndata: ${resourceBaseUrl.href}\n\n`);
+            });
+            resourceBaseUrl = await listenOnRandomPort(resourceServer);
+
+            const authProvider: AuthProvider = { token: vi.fn(async () => 'token') };
+            transport = new SSEClientTransport(resourceBaseUrl, { authProvider });
+            const onclose = vi.fn();
+            transport.onclose = onclose;
+            await transport.start();
+
+            await vi.waitFor(() => expect(onclose).toHaveBeenCalledTimes(1));
+            await transport.close();
+            expect(onclose).toHaveBeenCalledTimes(1);
+        });
+
+        it('SSE reconnect: a 401 whose onUnauthorized rejects fires onclose once', async () => {
+            await resourceServer.close();
+
+            let getAttempt = 0;
+            resourceServer = createServer((_req, res) => {
+                // 1: opens and drops, every later GET: 401.
+                if (++getAttempt > 1) {
+                    res.writeHead(401).end();
+                    return;
+                }
+                res.writeHead(200, { 'Content-Type': 'text/event-stream' });
+                res.end(`retry: 10\nevent: endpoint\ndata: ${resourceBaseUrl.href}\n\n`);
+            });
+            resourceBaseUrl = await listenOnRandomPort(resourceServer);
+
+            const authProvider: AuthProvider = {
+                token: vi.fn(async () => 'token'),
+                onUnauthorized: vi.fn().mockRejectedValue(new Error('refresh failed'))
+            };
+            transport = new SSEClientTransport(resourceBaseUrl, { authProvider });
+            const onclose = vi.fn();
+            transport.onclose = onclose;
+            await transport.start();
+
+            await vi.waitFor(() => expect(onclose).toHaveBeenCalledTimes(1));
+            await transport.close();
+            expect(onclose).toHaveBeenCalledTimes(1);
         });
 
         it('retry failure during SSE connect fires onerror exactly once', async () => {
